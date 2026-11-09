@@ -1,0 +1,11 @@
+[
+  {
+    "name": "Lumen",
+    "description": "A modern fullscreen now-playing view with synced lyrics, dynamic colors, up next and a built-in settings panel.",
+    "preview": "assets/preview.png",
+    "main": "lumen.js",
+    "readme": "README.md",
+    "authors": [{ "name": "vxnsin", "url": "https://github.com/vxnsin" }],
+    "tags": ["fullscreen", "lyrics", "now playing"]
+  }
+]
