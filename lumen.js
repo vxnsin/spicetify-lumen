@@ -15,6 +15,8 @@
         background: "dynamic", // dynamic | cover | solid
         blur: 60,
         brightness: 55,
+        artMode: "canvas", // cover | canvas
+        canvasBackground: false,
         lyrics: true,
         lyricsSize: 100,
         lyricsAlign: "left",
@@ -123,6 +125,9 @@
 #lumen.no-lyrics .lm-lyrics-wrap{display:none}
 #lumen .lm-art-wrap{flex:0 0 auto;width:min(42vw,62vh);display:flex;flex-direction:column;gap:26px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 #lumen .lm-art{position:relative;aspect-ratio:1;border-radius:14px;background:#222 center/cover;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 120px -10px rgba(var(--c1),.45);transition:box-shadow .8s}
+#lumen .lm-art video,#lumen .lm-bgvideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit;opacity:0;transition:opacity .6s;pointer-events:none}
+#lumen .lm-art video.show,#lumen .lm-bgvideo.show{opacity:1}
+#lumen .lm-bgvideo{border-radius:0;filter:brightness(.9)}
 #lumen .lm-art::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
 #lumen.paused .lm-art{transform:scale(.94)}
 #lumen .lm-art{transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .8s}
@@ -146,7 +151,6 @@
 #lumen .lm-line.dots{font-size:.7em}
 #lumen .lm-static .lm-line{opacity:.85;filter:none;transform:none;cursor:default}
 #lumen .lm-nolyrics{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.5}
-#lumen .lm-src{position:absolute;right:0;bottom:6px;font-size:11px;opacity:.35;letter-spacing:.08em;text-transform:uppercase}
 
 #lumen .lm-bottom{position:absolute;left:0;right:0;bottom:0;padding:0 6vw 34px;display:flex;flex-direction:column;gap:14px;z-index:5;transition:opacity .4s,transform .4s}
 #lumen .lm-prog{display:flex;align-items:center;gap:14px;font-size:12px;font-variant-numeric:tabular-nums;opacity:.9}
@@ -193,7 +197,7 @@
 `;
 
     const icons = {
-        full: '<svg viewBox="0 0 16 16"><path d="M6.53 9.47a.75.75 0 0 1 0 1.06l-2.72 2.72h1.018a.75.75 0 0 1 0 1.5H1.25v-3.579a.75.75 0 0 1 1.5 0v1.018l2.72-2.72a.75.75 0 0 1 1.06 0zm2.94-2.94a.75.75 0 0 1 0-1.06l2.72-2.72h-1.018a.75.75 0 1 1 0-1.5h3.578v3.579a.75.75 0 0 1-1.5 0V3.81l-2.72 2.72a.75.75 0 0 1-1.06 0z"/></svg>',
+        full: '<svg viewBox="0 0 16 16" width="16" height="16" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round"><path d="M2 5.5V3.5A1.5 1.5 0 0 1 3.5 2h2M10.5 2h2A1.5 1.5 0 0 1 14 3.5v2M14 10.5v2a1.5 1.5 0 0 1-1.5 1.5h-2M5.5 14h-2A1.5 1.5 0 0 1 2 12.5v-2"/><circle cx="8" cy="8" r="2.2" style="fill:currentColor;stroke:none"/></svg>',
         close: '<svg viewBox="0 0 16 16"><path d="M2.47 2.47a.75.75 0 0 1 1.06 0L8 6.94l4.47-4.47a.75.75 0 1 1 1.06 1.06L9.06 8l4.47 4.47a.75.75 0 1 1-1.06 1.06L8 9.06l-4.47 4.47a.75.75 0 0 1-1.06-1.06L6.94 8 2.47 3.53a.75.75 0 0 1 0-1.06z"/></svg>',
         gear: '<svg viewBox="0 0 16 16"><path d="M8 0a1 1 0 0 0-1 1v.6a5.5 5.5 0 0 0-1.4.6l-.4-.4a1 1 0 0 0-1.4 1.4l.4.4A5.5 5.5 0 0 0 3.6 5H3a1 1 0 0 0 0 2h.6c.1.5.3 1 .6 1.4l-.4.4a1 1 0 1 0 1.4 1.4l.4-.4c.4.3.9.5 1.4.6V11a1 1 0 0 0 2 0v-.6c.5-.1 1-.3 1.4-.6l.4.4a1 1 0 0 0 1.4-1.4l-.4-.4c.3-.4.5-.9.6-1.4h.6a1 1 0 0 0 0-2h-.6a5.5 5.5 0 0 0-.6-1.4l.4-.4a1 1 0 0 0-1.4-1.4l-.4.4A5.5 5.5 0 0 0 9 1.6V1a1 1 0 0 0-1-1zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" fill-rule="evenodd" transform="translate(0 2.5)"/></svg>',
         lyrics: '<svg viewBox="0 0 16 16"><path d="M13.426 2.574a2.831 2.831 0 0 0-4.797 1.55l3.247 3.247a2.831 2.831 0 0 0 1.55-4.797zM10.5 8.118l-2.619-2.62A63303.13 63303.13 0 0 0 4.74 9.075L2.065 12.12a1.287 1.287 0 0 0 1.816 1.816l3.06-2.688 3.56-3.129zM7.12 4.094a4.331 4.331 0 1 1 4.786 4.786l-3.974 3.493-3.06 2.689a2.787 2.787 0 0 1-3.933-3.933l2.676-3.045 3.505-3.99z"/></svg>',
@@ -213,7 +217,7 @@
     root.id = "lumen";
     root.innerHTML = `
 <div class="lm-bg">
-  <div class="lm-cover"></div><div class="lm-blob a"></div><div class="lm-blob b"></div>
+  <div class="lm-cover"></div><video class="lm-bgvideo" muted loop playsinline></video><div class="lm-blob a"></div><div class="lm-blob b"></div>
   <div class="lm-shade"></div><div class="lm-vignette"></div><div class="lm-grain"></div>
 </div>
 <div class="lm-top">
@@ -227,10 +231,10 @@
 </div>
 <div class="lm-main">
   <div class="lm-art-wrap">
-    <div class="lm-art"></div>
+    <div class="lm-art"><video muted loop playsinline></video></div>
     <div class="lm-meta"><div class="lm-title"></div><div class="lm-artist"></div><div class="lm-album"></div></div>
   </div>
-  <div class="lm-lyrics-wrap"><div class="lm-lyrics"></div><div class="lm-src"></div></div>
+  <div class="lm-lyrics-wrap"><div class="lm-lyrics"></div></div>
 </div>
 <div class="lm-bottom">
   <div class="lm-prog"><span class="lm-cur">0:00</span><div class="lm-bar"><i><b></b></i></div><span class="lm-dur">0:00</span></div>
@@ -264,8 +268,8 @@
         if (!$("#lumen-style")) document.head.appendChild(style);
         document.body.appendChild(root);
         Object.assign(refs, {
-            cover: q(".lm-cover"), art: q(".lm-art"), title: q(".lm-title"), artist: q(".lm-artist"), album: q(".lm-album"),
-            ctxN: q(".lm-ctx-n"), ctxL: q(".lm-ctx-l"), clock: q(".lm-clock"), lyrics: q(".lm-lyrics"), src: q(".lm-src"),
+            cover: q(".lm-cover"), art: q(".lm-art"), artVideo: q(".lm-art video"), bgVideo: q(".lm-bgvideo"), title: q(".lm-title"), artist: q(".lm-artist"), album: q(".lm-album"),
+            ctxN: q(".lm-ctx-n"), ctxL: q(".lm-ctx-l"), clock: q(".lm-clock"), lyrics: q(".lm-lyrics"),
             cur: q(".lm-cur"), dur: q(".lm-dur"), bar: q(".lm-bar"), fill: q(".lm-bar b"), play: q(".lm-play"),
             next: q(".lm-next"), nextImg: q(".lm-next img"), nextT: q(".lm-next span"), nextA: q(".lm-next em"),
             vol: q(".lm-vol"), volFill: q(".lm-vol b"), settings: q(".lm-settings"),
@@ -286,6 +290,8 @@
     function buildSettings() {
         refs.settings.innerHTML = `
 <h3>Layout</h3>${seg("layout", [["split", "Split"], ["center", "Cover"], ["lyrics", "Lyrics"]])}
+<h3>Artwork</h3>${seg("artMode", [["cover", "Cover"], ["canvas", "Canvas"]])}
+${tog("canvasBackground", "Canvas as background")}
 <h3>Background</h3>${seg("background", [["dynamic", "Dynamic"], ["cover", "Cover"], ["solid", "Solid"]])}
 ${rng("blur", "Blur", 0, 120)}${rng("brightness", "Brightness", 10, 100)}
 <h3>Lyrics</h3>${tog("lyrics", "Show lyrics")}${rng("lyricsSize", "Size", 60, 160)}
@@ -302,7 +308,9 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
             if (s) {
                 cfg[s.parentNode.dataset.k] = s.dataset.v;
                 [...s.parentNode.children].forEach((b) => b.classList.toggle("on", b === s));
-                return commit();
+                commit();
+                if (s.parentNode.dataset.k === "artMode") updateCanvas();
+                return;
             }
             const t = e.target.closest("[data-t]");
             if (t) {
@@ -312,6 +320,7 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
                 commit();
                 if (k === "lyrics" && cfg.lyrics) fetchLyrics(true);
                 if (k === "beautifulLyrics") fetchLyrics(true);
+                if (k === "canvasBackground") updateCanvas();
             }
         };
         refs.settings.oninput = (e) => {
@@ -425,7 +434,7 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
             if (e.key === "Escape" && state.open) {
                 e.stopPropagation();
                 close();
-            } else if ((e.key === "f" || e.key === "F") && !e.shiftKey) {
+            } else if ((e.key === "f" || e.key === "F" || e.key === "t" || e.key === "T") && !e.shiftKey) {
                 e.preventDefault();
                 state.open ? close() : open();
             } else if ((e.key === "l" || e.key === "L") && state.open) {
@@ -442,6 +451,7 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
         const playing = P.isPlaying();
         refs.play.innerHTML = playing ? icons.pause : icons.play;
         root.classList.toggle("paused", !playing);
+        for (const v of [refs.artVideo, refs.bgVideo]) if (v?.classList.contains("show")) playing ? v.play().catch(() => {}) : v.pause();
         q('[data-a="shuffle"]').classList.toggle("on", !!P.getShuffle());
         const rep = P.getRepeat();
         const r = q('[data-a="repeat"]');
@@ -599,7 +609,6 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
         state.lyrics = null;
         state.active = -1;
         refs.lyrics.innerHTML = '<div class="lm-nolyrics">…</div>';
-        refs.src.textContent = "";
         const id = m.uri.split(":")[2];
         let res = null;
         const order = cfg.beautifulLyrics ? ["spotify", "lrclib"] : ["lrclib", "spotify"];
@@ -625,13 +634,11 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
         box.classList.toggle("lm-static", !!L && !L.synced);
         if (!L?.lines?.length) {
             box.innerHTML = '<div class="lm-nolyrics">No lyrics for this track</div>';
-            refs.src.textContent = "";
             return;
         }
         box.innerHTML = L.lines
             .map((l, i) => `<div class="lm-line ${l.text ? "" : "empty dots"}" data-i="${i}" data-t="${l.t}">${l.text ? esc(l.text) : "•••"}</div>`)
             .join("");
-        refs.src.textContent = L.source + (hasBeautifulLyrics() ? " · Beautiful Lyrics detected" : "");
         state.active = -1;
         box.scrollTop = 0;
     }
@@ -660,6 +667,79 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
         if (a) refs.lyrics.scrollTo({ top: a.offsetTop - refs.lyrics.clientHeight / 2 + a.offsetHeight / 2, behavior: "smooth" });
     }
 
+    // ---------- canvas ----------
+    const canvasCache = new Map();
+
+    const protoReq = (uri) => {
+        const u = new TextEncoder().encode(uri);
+        const entity = new Uint8Array([0x0a, u.length, ...u]);
+        return new Uint8Array([0x0a, entity.length, ...entity]);
+    };
+
+    let spHosts = null;
+    const getToken = async () => {
+        const A = Spicetify.Platform?.AuthorizationAPI;
+        try {
+            const t = await A._tokenProvider({ preferCached: true });
+            if (t?.accessToken) return t.accessToken;
+        } catch {}
+        return A?.getState?.()?.token?.accessToken || Spicetify.Session?.accessToken;
+    };
+    const getSpHost = async () => {
+        try {
+            spHosts ||= (await (await fetch("https://apresolve.spotify.com/?type=spclient")).json()).spclient;
+        } catch {}
+        const list = spHosts?.length ? spHosts : ["spclient.wg.spotify.com"];
+        return list[Math.floor(Math.random() * list.length)];
+    };
+
+    async function fetchCanvas(uri) {
+        if (canvasCache.has(uri)) return canvasCache.get(uri);
+        let url = null;
+        try {
+            const [token, host] = await Promise.all([getToken(), getSpHost()]);
+            const r = await fetch(`https://${host}/canvaz-cache/v0/canvases`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-protobuf", Authorization: `Bearer ${token}` },
+                body: protoReq(uri),
+            });
+            if (r.ok) {
+                const txt = new TextDecoder("latin1").decode(await r.arrayBuffer());
+                url = (txt.match(/https:\/\/canvaz\.scdn\.co\/upload\/[!-~]+?\.(?:mp4|webm)/) || [])[0] || null;
+            }
+            console.log("[Lumen] canvas", r.status, url);
+        } catch (e) {
+            console.warn("[Lumen] canvas fetch failed", e);
+        }
+        if (url) canvasCache.set(uri, url);
+        return url;
+    }
+
+    function setVideo(v, url) {
+        if (url) {
+            if (v.dataset.src !== url) {
+                v.dataset.src = url;
+                v.src = url;
+            }
+            v.classList.add("show");
+            P.isPlaying() ? v.play().catch(() => {}) : v.pause();
+        } else {
+            v.classList.remove("show");
+            v.pause();
+            v.removeAttribute("src");
+            delete v.dataset.src;
+        }
+    }
+
+    async function updateCanvas() {
+        const uri = P.data?.item?.uri;
+        const want = cfg.artMode === "canvas" || cfg.canvasBackground;
+        const url = want && uri ? await fetchCanvas(uri) : null;
+        if (uri !== P.data?.item?.uri) return;
+        setVideo(refs.artVideo, cfg.artMode === "canvas" ? url : null);
+        setVideo(refs.bgVideo, cfg.canvasBackground ? url : null);
+    }
+
     // ---------- track updates ----------
     async function updateTrack() {
         const m = trackMeta();
@@ -677,6 +757,7 @@ ${tog("beautifulLyrics", "Prefer Beautiful Lyrics sync")}
         syncState();
         updateColors(m.cover);
         fetchLyrics();
+        updateCanvas();
     }
 
     function loop() {
